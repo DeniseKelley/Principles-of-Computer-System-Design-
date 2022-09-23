@@ -1,0 +1,80 @@
+In this design+implementation assignment, you will further extend the in-memory file system and shell, as described below. You will start from the Python files distributed in the previous assignment.
+
+## What to turn in on Canvas ##
+
+*PLEASE MAKE SURE TO FOLLOW THE NAMING CONVENTION BELOW* - it significantly speeds up grading. You will be deducted points for using wrong file names.
+
+- A file HW2.pdf with 
+  - a brief description of your design and implementation
+  - a description of how you tested your design
+- A file HW2.zip with:
+  - Your modified memoryfs.py
+  - Your modified memoryfs_shell.py
+
+## Design/implementation ##
+
+1) Warmup: extend the design of memoryfs_shell.py to support the following shell commands:
+
+mkdir dirname
+creates a directory named "dirname" (a string without spaces) in the current working directory
+
+create filename
+creates a file named "filename" (a string without spaces) in the current working directory
+
+append filename string
+appends a string (without spaces) to the end of "filename", if it exists (and if there is sufficient room in the file)
+
+Hint: follow the pattern for the other commands in the shell to implement these. Familiarize yourself with the Create() and Write() methods of the FileName() class given to you in memoryfs.py
+
+2) Main challenge: extend your design to support unlinking (removing). In particular, you will extend the FileName() class in memoryfs.py with the Unlink() method, and extend the shell with the rm command (which calls Unlink()):
+
+memoryfs_shell.py:
+rm filename
+Remove the file by calling Unlink(), if the file exists in the cwd and is a regular file (not a directory)
+
+memoryfs.py
+def Unlink(self, dir, name):
+
+Here, "dir" is the *inode number* of the current directory and "name" is the *file name* to be unlinked
+
+Similar to the book's description, this function should provide the following functionality:
+
+* NOTE: please ensure you return the error message EXACTLY AS SHOWN BELOW for smooth grading. Your aasignment *will* have points deducted for not following the naming convention*
+
+a) Ensure "dir" corresponds to a valid directory; if not, return an error ERROR_UNLINK_INVALID_DIR
+b) Ensure "name" exists in the directory; if not, return an error ERROR_UNLINK_DOESNOT_EXIST
+c) Ensure "name" refers to a file of type INODE_TYPE_FILE; if not, return error ERROR_UNLINK_NOT_FILE
+d) Decrement the refcnt of the file that is being unlinked
+e) Remove the (name,inode) binding for this file in dir
+f) Decrement the refcnt for the directory dir
+g) If the file's refcnt drops to zero:
+  g.1) Free up the file's blocks (setting the proper byte(s) to 0 in the free block bitmap)
+  g.2) Free up the inode (setting the inode to be INODE_TYPE_INVALID)
+
+
+Hint: the solution to this problem does not involve a large amount of code (it can be done in about 70 lines of code, or even less). The keys to solve this problem are: 1) make sure you clearly understand how data is stored in RawBlocks (see HW#1) and how to copy data from/to the RawBlocks class (which represents the actual disk storage in a real file system implementation) to the higher-level Python classes (such as InodeNumber() and Inode(); these represent what a kernel would work with in main memory in a real file system implementation); 2) work on one sub-problem from the a) to g) list above at a time, and make sure you test each sub-problem before moving to the next; 3) test iteratively: the showinode, showblock and showblockslice in the shell will help you debug and ensure your implementation is doing what you intended it to do and that you are storing data in the right format/place; 4) complement the existing debugging information with your own print statements while you develop (comment these out before submission) to help in the process
+
+Hint: study Create() carefully; it will help you understand how to use various functions helpful also in Unlink(), including InodeNumberToInode() (initialized Python Inode() object from the data stored in raw blocks), StoreInode (store Python Inode() object back to raw blocks), Lookup (as per textbook description), as well as for how to return an error value and message
+
+Hint: study the ls implementation in memoryfs_shell,py carefully as well; it will help you understand how to search directory blocks for (name,inode) bindings
+
+Hint: part e) can be implemented in different ways; the simpler approach is to overwrite the (name,inode) binding of the file being unlinked with the last (name,inode) binding in the directory, and adjusting the size
+
+3) [EEL5737 students only]: Characterize the performance of the Create() and Unlink() methods by counting how many Put() and Get() operations the implementation requires. Discuss (there is no need to implement) if there are possible inefficiencies in the code that could be improved to reduce the number of RawBlock Put() and Get() operations.
+
+Hint: use the log file, and add your own logging if/as needed
+
+
+# Test cases #
+
+Part of a good design is to come up with good test cases. You are expected to test your system thoroughly - including with different file system configurations (to ensure you haven't hardcoded any constants) and to test for potential corner cases. 
+
+You will find one test case input (hw2_2022_test1.in) and output (hw2_2022_test1.out) on Canvas. Make sure your code works correctly for this test case, but don't stop there - you should come up with your own tests to expand coverage of expected functionality.
+
+You can initially run the commands from the test case one by one, interactively, in the shell. You can also run them in a batch by using redirection. This runs the test case with default file system configuration (you can use command-line arguments to change file system configuration as per HW#1):
+
+python3 memoryfs_shell.py < hw2_2022_test1.in > my_test1.out
+
+You will also find a Linux shell script on Canvas that can be used to clean up the output (removing special characters, adding line breaks for readability). Note that this script only works on Linux (it's not required for your assignment, but can help you visualize outputs). You can run it as follows:
+
+./clean_output.sh my_test1.out

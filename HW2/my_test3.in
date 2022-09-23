@@ -1,0 +1,13 @@
+mkdir dir1
+cd dir1
+create f1
+create f2
+create f3
+create f4
+create f5
+create f6
+create f7
+create f8
+create f9
+rm f2
+ls

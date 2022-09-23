@@ -1,0 +1,27 @@
+[cwd=0]%
+[cwd=0]%
+[cwd=0]%
+[cwd=0]%
+[cwd=0]%
+Successfully appended 13 bytes.
+[cwd=0]%
+FILE3CONTENTS
+[cwd=0]%
+[5]:./
+[1]:dir1/
+[1]:f1
+[1]:f2
+[1]:f3
+[cwd=0]%
+[cwd=0]%
+[4]:./
+[1]:dir1/
+[1]:f1
+[1]:f2
+[cwd=0]%
+Error: not found
+[cwd=0]%
+[cwd=0]%
+[cwd=0]%
+Error: ERROR_UNLINK_NOT_FILE
+[cwd=0]%

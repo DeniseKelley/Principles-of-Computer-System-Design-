@@ -1,0 +1,46 @@
+mkdir dir1
+create f1
+create f2
+create f3
+append f3 FILE3CONTENTS
+cat f3
+ls
+rm f3
+ls
+cat f3
+rm f1
+rm f2
+rm dir1
+cd dir1
+create f1
+append f1 FILE1CONTENTS
+cat f1
+ls
+cd ..
+mkdir dir2
+cd dir2
+create f2
+append f2 FILE2CONTENTS
+cat f2
+ls
+create f3
+create f4
+create f5
+create f6
+create f7
+create f8
+create f9
+create f10
+create f11
+create f12
+create f13
+create f14
+ls
+rm f2
+cat f2
+ls
+create f14
+append f14 FILE14CONTENTS
+cat f14
+ls
+exit
