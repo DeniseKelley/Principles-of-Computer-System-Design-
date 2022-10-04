@@ -1,0 +1,11 @@
+create f1
+ls
+append f1 1111111111
+cat f1
+lns f1 f2
+ls
+lnh f1 f3
+ls
+cat f3
+exit
+

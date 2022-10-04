@@ -1,0 +1,81 @@
+## HW1.1 Introduction ##
+
+Throughout this semester, you will go over several design+implementation assignments that extend an in-memory file system inspired by the design described in Chapter 2 of the textbook. In this assignment, you will familiarize yourself with the code and the file system structure. Please refer to the slides posted to Canvas for an overview of the implementation.
+
+Two Python code files are provided to you: memoryfs.py and memoryfs_shell.py. The memoryfs.py file implements the file system objects described in the overview presentation. The memoryfs_shell.py imports memoryfs, and implements a rudimentary "shell" for interactive access to the file system. You can invoke the shell with:
+
+python3 memoryfs_shell.py [-nb total_num_blocks] [--bs block_size] [-ni max_num_inodes] [-is inode_size]
+
+The values in square brackets are optional; if not provided, the defaults are: -nb 256, -bs 128, -ni 16, -is 16 (256 blocks, each 128-bytes in size; 16 inodes, each 16 bytes in size)
+
+Once you run the shell with the command above, you will be shown a "command-line interface" that is similar to a UNIX terminal and lets you navigate the file system objects implemented in the code. The command-line interface shows the current working directory's inode number CWD in the prompt, as in: "[cwd=CWD]:"
+
+The version of the shell provided to you implements the following commands:
+
+File system operation:
+ - "cd dirname" : allows you to change the current working directory (CWD) to dirname, if it exists
+ - "ls" : lists the names of the files, directories in the CWD. For each object, it shows the reference count inside []; directories are shown with a "/" appended at the end of the directory name
+ - "cat filename" : shows you the contents of file "filename", if it exists
+
+Test/debugging operations:
+ - "load dumpfile" : loads file system state in memory from a previously saved "dump" file "dumpfile" in disk
+ - "save dumpfile" : saves file system state from the in-memory file system to a "dump" file dumpfile in disk (note: for reference only; you will not need to use this command in this assignment)
+ - "showfsconfig" : displays the file system configuration, including number of blocks, block size, number of inodes, inode size, and a representation of the file system layout with respect to raw blocks
+ - "showblock blockno" : displays the contents of raw block number "blockno"; it shows both a string representation of the block (if the block has ASCII-encoded strings), as well as a hexadecimal representation of the block
+ - "showblockslice blockno start end" : displays a slice of the contents of raw block number "blockno", in hexadecimal format, from byte "start" to byte "end", including byte "end" (as opposed to showblock, which shows the entire block)
+ - "showinode inodeno" : displays the inode data structure for inode number "inodeno"
+ - "exit" : exits the shell and ends the program (without saving any state)
+
+## HW1.2 What to turn in on Canvas ##
+
+- A single file named HW1.pdf with answers to the questions below
+
+## HW1.3 Questions ##
+
+You are given two different "dump" files with pre-loaded contents for two different file systems. To load these, make sure you run the program with the appropriate command line arguments that match the file system configuration of the dump files:
+
+Start with the smaller dump file hw1_dump_BS_128_NB_256_IS_16_NI_16.dump, which uses the default file system configuration. You can run the file system/shell and load the fump file as follows:
+
+# Dump file hw1_dump_BS_128_NB_256_IS_16_NI_16.dump - uses the default file system configuration
+python3 memoryfs_shell.py
+[cwd=0]: load hw1_dump_BS_128_NB_256_IS_16_NI_16.dump
+
+Use the commands ls, cat, cd, showfsconfig, showblock, showblockslice, and showinode to answer the following questions. *NOTE* for each question, please explain briefly which commands you used to find the answer (don't provide just the answer without an explanation)
+
+Q1) What is the maximum file size possible with this file system configuration? 
+Q2) How many inodes are in use in this file system? (not the maximum number of inodes, but how many inodes are in use for this dump file) 
+Q3) Which raw blocks are allocated and in use in this file system? 
+Q4) Describe what is stored in inode 0
+Q5) Describe what is stored in block 6
+Q6) Describe what is represented in the output of command showblockslice 6 0 15 (hint: look up ASCII encoding in hexadecimal format, and refer to the file system code slides discussed in class)
+Q7) Describe what is represented in the output of command showblockslice 6 16 31
+Q8) What is the inode number of file file1.txt? 
+Q9) What is the inode number of directory dir1?
+Q10) Which raw block stored the inode of file file1.txt? 
+Q11) Describe what is stored in block 7
+Q12) What is the inode number of directory dir3?
+Q13) What is the inode number of directory dir4?
+Q14) What is the inode number of file file4.txt?
+Q15) What block number(s) make up the contents of file4.txt (found in /dir3/dir4)?
+
+
+[EEL5737 students only] Now run the file system with the larger dump file, as follows:
+
+# Dump file hw1_dump_BS_512_NB_2048_IS_32_NI_128.dump
+python3 memoryfs_shell.py -nb 2048 -bs 512 -ni 128 -is 32
+[cwd=0]: load hw1_dump_BS_512_NB_2048_IS_32_NI_128.dump
+
+Q16) [EEL5737 students only] What is the largest possible file size in this file system?
+Q17) [EEL5737 students only] Inspect the contents of this file system with ls, cd, cat, showinode, etc. There are *two* different ways in which the contents of this file system would not be possible with the default configuration (used in the smaller dump file). What are they, and why?
+
+2e00000000000000000000000000000066696c65312e74787400000000000001
+6469723100000000000000000000000266696c65322e74787400000000000003
+6469723200000000000000000000000464697233000000000000000000000007
+6469723500000000000000000000000a00000000000000000000000000000000
+
+
+2e0000000000000000000000000000006469723500000000000000000000000a
+6469723100000000000000000000000266696c65322e74787400000000000003
+6469723200000000000000000000000464697233000000000000000000000007
+6469723500000000000000000000000a00000000000000000000000000000000
+
