@@ -1,0 +1,201 @@
+In this design+implementation assignment, you will further extend the in-memory file system,
+as described below. You are given a starting point of a client-server implementation that builds 
+on the HW#3 code and supports RPC calls an a simple locking mechanism based on read-and-set memory.
+
+
+## What to turn in on Canvas ##
+
+*PLEASE MAKE SURE TO FOLLOW THE NAMING CONVENTION BELOW* - it significantly speeds up grading. 
+You will be deducted points for using wrong file names.
+
+- A file HW4.pdf with: 
+  - your answers to the assignment questions 
+  - a description of your design and implementation, including the main classes/methods you changed/implemented
+  - a description of how you tested:
+    - at-least-once behavior when timeouts and server disconnections occur
+    - persisting data across server restarts
+- A file HW4.zip with:
+  - A file memoryfs_client.py
+  - A file memoryfs_server.py
+  - A file memoryfs_shell_rpc.py
+
+## Starting point ##
+
+In this assignment, you are given a modified version of the file system that implements a 
+client/server model using XMLRPC (an RPC library available for Python). The key idea behind 
+this implementation is to separate the system into a block server (which implements the raw 
+block layer, and exposes Get() and Put() interfaces, as well as a RSM() interface to support 
+locks), and a file system client (which implements the layers above the raw layer, e.g. inodes, 
+filename). The shell code has also been modified to support single-writer operations using locks,
+thereby supporting multiple clients.
+
+1) Block server (memoryfs_server.py)
+
+The block server holds the file system data - think of it as implementing the raw disk 
+(which in previous assignments was in the DiskBlocks() object) that exposes Put/Get interfaces 
+over RPC. The raw blocks are initialized with zeroes at startup. The server exposes the following 
+methods to the client:
+
+Get(block_number) returns a block, given its number
+Put(block_number, data) writes a block, given its number and data contents
+RSM(block_number, data) reads a block, sets the block contents to a LOCKED value, and 
+returns the block read. Equivalent of the RSM primitive as discussed in class, but using a 
+disk block instead of a memory location to hold a lock
+
+2) File system client (memoryfs_client.py)
+
+Here, the key insight is that the DiskBlocks() class is now a XMLRPC client; it no longer holds 
+the actual raw blocks data, but implements instead calls to the Get() and Put() primitives to the 
+RPC server. Once Get() and Put() are implemented in this way, all the functionality that we had 
+implemented thus far (inodes, files, etc) work, unmodified - which highlights the power of 
+abstraction, modularity, and layering.
+
+Also, this has been modified to extend the inode data structure with one more field - gencnt - 
+which will be used in this assignment to implement a cache. This is a 4-byte field that increases 
+the metadata size of the inode from 8 to 12 (hence reducing the block_numbers[] array size to a 
+single entry in the default 16-Byte inode size)
+
+3) File system shell
+
+The shell now allows the possibility that there might be multiple clients connected to the same 
+block server, and uses Acquire() and Release() primitives (which build on the RSM() call) to 
+enforce before-or-after atomicity and a single-writer for multi-write operations. 
+
+
+The shell now takes two extra command-line arguments:
+  -cid CLIENT_ID : CLIENT_ID is an integer. It specifies a unique ID to the client. For instance, 
+  if you run two clients, you can use the command-line argument -cid 0 for one, and -cid 1 for 
+  the other
+  -port PORT : PORT is an integer. It specifies to connect to the server in port number PORT. 
+  The server address is stored in variable SERVER_ADDRESS in the memoryfs_client.py file
+
+
+## Design/implementation ##
+
+1) Implement artificial delay in memoryfs_server.py to model a server/network slow to respond
+
+Modify memoryfs_server.py to support a new command-line argument -delayat COUNT, where COUNT
+is an integer. Then, in your server code, modify the Get() and Put() implementations such that 
+for every Nth request (N is the COUNT), the server artificially delays by "sleeping" for 10 
+seconds.
+
+2) Implement at-least-once semantics for memoryfs_client.py
+
+Implement at-least-once semantics for the Get(), Put() and RSM() calls in the client, such 
+that your design is able to recover both from timeouts, and when the server is 
+disconnected/reconnected. 
+*FOR FULL CREDIT* make sure your implementation prints out the following error messages 
+(exactly these strings) when these events happen, respectively:
+
+SERVER_TIMED_OUT
+SERVER_DISCONNECTED
+
+3) Implement an in-disk key/value store for memoryfs_server.py
+
+In the implementations up to HW#3, the RawBlocks data is stored in main memory - hence,
+when the process terminates or is killed, the data is gone. In this assignment, you will 
+implement a key/value store in disk that persists over restarts using Python's dbm module
+ https://remusao.github.io/posts/python-dbm-module.html
+
+To this end, modify the server to support two additional command-line arguments: 
+-initdbm : an integer flag; 1 initializes the database with zero blocks, 0 does not initialize 
+the database 
+-dbmfile : a string that names the file used by dbm in disk 
+
+If the -dbmfile argument is given, you should use the named file as storage. Then, 
+if -initdbm is 1, initialize all blocks with zeroes; otherwise, don't initialize - simply 
+use its contents.
+
+4) Implement a client-side cache for file data blocks Read() in memoryfs_client.py
+
+Extend your memoryfs_client.py to support client-side caching of file data blocks. You should 
+only concern with data blocks in regular files - not directories, not inodes, no free bitmap 
+blocks, etc.
+
+You will implement a simple caching invalidation policy as follows:
+  - initialize gencnt to 0, and increment it any time the file is written to, *and* also when it 
+  is unlinked
+  - when a file is Read(), check first what the gencnt in the inode is, and what the gencnt in 
+  the cache is. 
+    - If the gencnt match, you may Get() blocks from the cache if they are present in the cache 
+    - If the gencnt do not match, invalidate all cache entries for this file inode
+    - If the block is not present in the cache, Get() from the server and store in the cache
+
+*FOR FULL CREDIT* make sure your implementation prints out the following status messages to the screen (exactly these strings) when *each* block is found in the cache, and when the cache is invalidate, respectively:
+
+CACHE_HIT
+CACHE_INVALIDATED
+
+## Assignment questions ##
+
+Q1) In the code given to you, the Acquire() and Release() calls are placed around operations such
+as cat and append to ensure they run exclusively in one client at a time. What is one example of a 
+race condition that can happen without the lock? Simulate a race condition in the code 
+(comment out the lock Acquire()/Release() in the cat and append functions, and place sleep 
+statement(s) strategically) to verify, and describe how you did it.
+
+Q2) What happens when you don't store the data in disk using dbm on the server, and 
+terminate/restart the server? 
+
+Q3) What are the changes that were made to the Get() and Put() methods in the client, 
+compared to the HW#3 version of the code?
+
+Q4) At-least-once semantics may at some point give up and return (e.g. perhaps the server 
+is down forever). How would you implement this in the code (you don't need to actually implement; 
+just describe in words)
+
+Q5) [EEL5737 students only] Describe in your own words how the RSM() function is implemented in 
+the code given to you. What is one assumption implicitly made regarding threading in the 
+implementation that, if violated, would break before-or-after atomicity?
+
+Q6) [EEL5737 students only] Discuss in what respects this implementation is similar to NFS,
+ and in what respects it is fundamentally different from NFS 
+
+Q7) [EEL5737 students only] How would you evaluate the performance of the cache you implemented? In what circumstances would you expect it to provide significant performance advantages over no caching?
+
+Hints:
+
+- Python supports a time.sleep() method
+
+- to deal with retries, use Python try/except clauses. In the example below, Python will try to
+ run the [some action] code sequence. If the execution of [some action] raises [exception A] 
+ (e.g. a timeout), Python will run the code sequence [handle exception A]. Similarly, if a 
+ different[exception B] occurs, it will run the code sequence [handle exception B]
+
+try:                 
+  [some action]
+  except [exception A]:
+    [handle exception A]
+  except [exception B]:
+    [handle exception B]
+
+- there are two exceptions you want to look into: ConnectionRefusedError 
+(the server has refused or dropped a TCP connection) and socket.timeout 
+(the server took longer than SOCKET_TIMEOUT to respond; SOCKET_TIMEOUT is set to 5s by default 
+in memoryfs_client.py)
+
+- to test, you can open one terminal to run the server, and multiple terminals, each for a 
+different client. To simulate a server disconnection/reconnection, kill the server in its 
+terminal using CTRL-C, then restart it
+
+- test one feature at a time extensively before you move to the next one, in the order in which 
+they are described above - i.e., make sure you test extensively 1) before you move on to implement 
+2), and so on
+
+- because of the addition of gencnt with 4 bytes in the inode, the default file system configuration 
+now only has one block per inode; make sure you test with larger configurations 
+(e.g. -nb 512 -bs 256 -is 32 -ni 32)
+
+- for the cache, you can extend the DiskBlocks() method to store dictionaries for 
+1) the block cache, and 2) the inode ref count
+
+- for the cache, focus on the Read() method; also make sure you deal properly with updating the 
+gencnt in Unlink()
+
+- in addition to the assignment files, you are given two simple example code files 
+(test_putget_client.py and test_putget_server.py) as a reference to help you understand how 
+XMLRPC works.
+
+- dbm only supports strings or bytes for keys and values. You can convert the key (block number)
+ to a string with str(). You can convert from bytearray to bytes with bytes(), and from bytes to 
+ bytearray with bytearray().

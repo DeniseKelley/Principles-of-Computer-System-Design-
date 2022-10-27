@@ -1,0 +1,44 @@
+You will need at least two terminals to run HW#4: one for the server, and one for the client+shell. If you run more clients, you will need more terminals
+
+1. Running the server (first terminal)
+
+First, run the block server. It will take three arguments:
+-port : port number in which the server listens (e.g. 8000)
+-nb : number of blocks (must match the client, e.g. 256)
+-bs : block size (must also match the client, e.g. 128)
+
+run it as follows:
+
+python3 memoryfs_server.py -p 8000 -nb 256 -bs 128
+
+
+2. Running the client+shell (second terminal)
+
+It takes the file system configuration arguments from previous assignments (e.g. -nb, -bs, -is, -ni) plus two new arguments:
+-cid : a unique client ID (e.g. 0)
+-port : port number of the server (must match the one above, e.g. 8000)
+
+run it as follows:
+
+python3 memoryfs_shell_rpc.py -cid 0 -port 8000
+
+The shell commands work as in previous assignments.
+
+
+3. Examples running different configurations and multiple clients
+
+Suppose you want to run a larger file system and two clients (cid 0 and 1):
+
+python3 memoryfs_server.py -p 8000 -nb 2048 -bs 512
+
+python3 memoryfs_shell_rpc.py -nb 2048 -bs 512 -is 32 -ni 128 -cid 0 -port 8000
+python3 memoryfs_shell_rpc.py -nb 2048 -bs 512 -is 32 -ni 128 -cid 1 -port 8000
+
+
+4. Terminating client and server
+
+You can quit the client with the exit command
+For the server, in its terminal, type CTRL+C to exit
+
+python3 memoryfs_shell_rpc.py -cid 0 -port 8000 -rootinit 0
+python3 memoryfs_server.py -p 8000 -nb 256 -bs 128 -delay 60 -dbmfile FILE_NAME -initdbm 0
